@@ -7,6 +7,10 @@ settings:
 importers:
 
   .:
+    dependencies:
+      expo-push-easy:
+        specifier: ^1.0.1
+        version: 1.0.1
     devDependencies:
       '@types/node':
         specifier: ^26.1.1
@@ -564,6 +568,9 @@ packages:
   expect-type@1.4.0:
     resolution: {integrity: sha512-KfYbmpRm0VbLjEvVa9yGwCi9GI34xvi7A/HXYWQO65CSD2u3MczUJSuwXKFIxlGsgBQizV9q5J9NHj4VG0n+pA==}
     engines: {node: '>=12.0.0'}
+
+  expo-push-easy@1.0.1:
+    resolution: {integrity: sha512-bTIUMXG5Mn9YbnGKVKzOFeEtcKBQ2bRJJopBIy/vHb0NO7F1s0sLTSXqzdVgZvb8TZZlsoZmKvZ8AWrRSpQ6pQ==}
 
   fdir@6.5.0:
     resolution: {integrity: sha512-tIbYtZbucOs0BRGqPJkshJUYdL+SDH7dVM8gjy+ERp3WAUjLEFJE+02kanyHtwjWOnwrKYBiwAmM0p4kLJAnXg==}
@@ -1304,6 +1311,8 @@ snapshots:
       '@types/estree': 1.0.9
 
   expect-type@1.4.0: {}
+
+  expo-push-easy@1.0.1: {}
 
   fdir@6.5.0(picomatch@4.0.5):
     optionalDependencies:

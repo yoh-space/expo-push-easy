@@ -12,14 +12,24 @@
       "require": "./dist/index.cjs"
     }
   },
-  "files": ["dist", "README.md"],
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
     "test": "vitest run",
     "prepublishOnly": "pnpm build"
   },
-  "keywords": ["expo", "push", "notification", "fcm", "firebase", "react-native"],
+  "keywords": [
+    "expo",
+    "push",
+    "notification",
+    "fcm",
+    "firebase",
+    "react-native"
+  ],
   "author": "",
   "license": "MIT",
   "type": "module",
@@ -40,5 +50,8 @@
     "tsup": "^8.5.1",
     "typescript": "^6.0.3",
     "vitest": "^4.1.10"
+  },
+  "dependencies": {
+    "expo-push-easy": "^1.0.1"
   }
 }

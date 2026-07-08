@@ -1,23 +1,25 @@
 # expo-push-easy
 
-Send push notifications from any JavaScript runtime — FCM v1, zero painful config.
+Send push notifications from any JavaScript runtime with one small API.
 
 ```ts
-import { sendFcm } from 'expo-push-easy'
+import { send } from 'expo-push-easy'
 
-const result = await sendFcm(token, { title: 'Hello', body: 'World' }, serviceAccount)
-// { success: true, fcmMessageId: "projects/.../messages/..." }
+const result = await send(token, { title: 'Hello', body: 'World' }, {
+  serviceAccount,
+})
+// { success: true, provider: 'fcm', fcmMessageId: 'projects/.../messages/...' }
 ```
 
 ## Why
 
 Push notifications are simple in concept but painful in practice:
 - FCM v1 requires OAuth2 JWT assertions
-- `jsonwebtoken` doesn't work in V8 runtimes (Convex, Cloudflare Workers)
-- The FCM v1 payload uses snake_case (`channel_id`, `default_sound`) — your IDE won't warn you
+- `jsonwebtoken` does not work in V8 runtimes like Convex and Cloudflare Workers
+- FCM v1 uses snake_case fields such as `channel_id`
 - Expo Push tokens and FCM tokens need different APIs
 
-**expo-push-easy** wraps all of that into one function call. **Zero runtime dependencies** — uses Web Crypto API (`crypto.subtle`) so it works in Node.js, Convex, Cloudflare Workers, Bun, and Deno.
+**expo-push-easy** wraps that into a small set of helpers. It has **zero npm dependencies** and uses the Web Crypto API (`crypto.subtle`), so it works in Node.js, Convex, Cloudflare Workers, Bun, and Deno.
 
 ## Install
 
@@ -29,22 +31,51 @@ pnpm add expo-push-easy
 
 ## Usage
 
-### Send to a single device (FCM)
+### Send to a single device
 
 ```ts
-import { sendFcm } from 'expo-push-easy'
+import { send } from 'expo-push-easy'
 
 const serviceAccount = JSON.parse(process.env.FCM_SERVICE_ACCOUNT!)
 
-const result = await sendFcm('fMcA6s8Abx0:APA91bHZnc...', {
+const result = await send('fMcA6s8Abx0:APA91bHZnc...', {
   title: 'Order Shipped',
   body: 'Your package is on the way!',
   data: { screen: '/orders', orderId: '123' },
   android: { channelId: 'orders', priority: 'HIGH' },
-}, serviceAccount)
+}, {
+  serviceAccount,
+})
 
 console.log(result)
 // { success: true, provider: 'fcm', fcmMessageId: 'projects/.../messages/...', status: 200 }
+```
+
+`send()` detects Expo Push tokens automatically and routes them to Expo, so you can use one function for both token types.
+
+### Send to Expo Push tokens
+
+```ts
+import { sendExpoPush } from 'expo-push-easy'
+
+const result = await sendExpoPush('ExponentPushToken[abc]', {
+  title: 'Order Shipped',
+  body: 'Your package is on the way!',
+})
+
+console.log(result)
+// { success: true, provider: 'expo-push', status: 200 }
+```
+
+### Send to FCM tokens directly
+
+```ts
+import { sendFcm } from 'expo-push-easy'
+
+const result = await sendFcm('fMcA6s8Abx0:APA91bHZnc...', {
+  title: 'Order Shipped',
+  body: 'Your package is on the way!',
+}, serviceAccount)
 ```
 
 ### Send in Convex
@@ -53,13 +84,13 @@ console.log(result)
 // convex/sendPush.ts
 import { action } from './_generated/server'
 import { v } from 'convex/values'
-import { sendFcm } from 'expo-push-easy'
+import { send as sendPush } from 'expo-push-easy'
 
-export const send = action({
+export const sendPushNotification = action({
   args: { token: v.string(), title: v.string(), body: v.string() },
   handler: async (_ctx, args) => {
     const sa = JSON.parse(process.env.FCM_SERVICE_ACCOUNT!)
-    return sendFcm(args.token, { title: args.title, body: args.body }, sa)
+    return sendPush(args.token, { title: args.title, body: args.body }, { serviceAccount: sa })
   },
 })
 ```
@@ -73,7 +104,7 @@ import { sendFcm } from 'expo-push-easy'
 export async function POST(req: Request) {
   const { token, title, body } = await req.json()
   const sa = JSON.parse(process.env.FCM_SERVICE_ACCOUNT!)
-  const result = await sendFcm(token, { title, body }, sa)
+  const result = await send(token, { title, body }, { serviceAccount: sa })
   return Response.json(result)
 }
 ```
@@ -88,7 +119,7 @@ const app = express()
 app.post('/notify', async (req, res) => {
   const { token, title, body } = req.body
   const sa = JSON.parse(process.env.FCM_SERVICE_ACCOUNT!)
-  const result = await sendFcm(token, { title, body }, sa)
+  const result = await send(token, { title, body }, { serviceAccount: sa })
   res.json(result)
 })
 ```
@@ -96,12 +127,42 @@ app.post('/notify', async (req, res) => {
 ### Send to multiple devices
 
 ```ts
-const results = await Promise.all(
-  tokens.map(token => sendFcm(token, { title: 'Broadcast', body: 'Hello!' }, sa))
+const results = await sendBatch(
+  tokens.map((token) => ({
+    token,
+    payload: { title: 'Broadcast', body: 'Hello!' },
+  })),
+  { serviceAccount: sa },
 )
+
+// For mixed token types, omit serviceAccount only if every token is Expo Push.
 ```
 
 ## API
+
+### `send(token, payload, options)`
+
+Auto-detects token type and routes to Expo Push or FCM.
+
+| Param | Type | Description |
+|-------|------|-------------|
+| `token` | `string` | Expo Push token or FCM device token |
+| `payload` | `PushPayload` | Notification payload |
+| `options.serviceAccount` | `ServiceAccount \| string` | Required for FCM tokens, ignored for Expo Push tokens |
+| `options.throwOnError` | `boolean` | Throw instead of returning an error result |
+
+Returns `Promise<PushResult>`
+
+### `sendBatch(pushes, options)`
+
+Sends an array of `{ token, payload }` items with the same options object.
+
+| Param | Type | Description |
+|-------|------|-------------|
+| `pushes` | `{ token: string; payload: PushPayload }[]` | Push jobs to send |
+| `options` | `SendOptions` | Same options passed to each send |
+
+Returns `Promise<PushResult[]>`
 
 ### `sendFcm(token, payload, serviceAccount)`
 
@@ -109,9 +170,22 @@ const results = await Promise.all(
 |-------|------|-------------|
 | `token` | `string` | FCM device token |
 | `payload` | `PushPayload` | Notification payload |
-| `serviceAccount` | `ServiceAccount \| string` | Firebase service account (object or JSON string) |
+| `serviceAccount` | `ServiceAccount` | Firebase service account object |
 
 Returns `Promise<PushResult>`
+
+### `sendExpoPush(token, payload)`
+
+| Param | Type | Description |
+|-------|------|-------------|
+| `token` | `string` | Expo Push token |
+| `payload` | `PushPayload` | Notification payload |
+
+Returns `Promise<PushResult>`
+
+### `detectTokenType(token)`
+
+Returns `'expo-push'` for tokens that start with `ExponentPushToken`, otherwise returns `'fcm'`.
 
 ### `PushPayload`
 
@@ -135,7 +209,7 @@ Returns `Promise<PushResult>`
 
 ### `ServiceAccount`
 
-The JSON object from Firebase Console → Project Settings → Service Accounts → Generate new private key.
+The JSON object from Firebase Console -> Project Settings -> Service Accounts -> Generate new private key.
 
 | Field | Type | Description |
 |-------|------|-------------|

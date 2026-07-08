@@ -15,11 +15,13 @@ function pemToBuf(pem: string): ArrayBuffer {
   return buf.buffer;
 }
 
-let cachedToken: { token: string; expiresAt: number } | null = null;
+const tokenCache = new Map<string, { token: string; expiresAt: number }>();
 
 export async function getFcmAccessToken(sa: ServiceAccount): Promise<string> {
-  if (cachedToken && Date.now() < cachedToken.expiresAt) {
-    return cachedToken.token;
+  const cacheKey = sa.client_email;
+  const cached = tokenCache.get(cacheKey);
+  if (cached && Date.now() < cached.expiresAt) {
+    return cached.token;
   }
 
   const now = Math.floor(Date.now() / 1000);
@@ -66,9 +68,9 @@ export async function getFcmAccessToken(sa: ServiceAccount): Promise<string> {
   if (!data.access_token)
     throw new Error(`OAuth failed: ${JSON.stringify(data)}`);
 
-  cachedToken = {
+  tokenCache.set(cacheKey, {
     token: data.access_token,
     expiresAt: now + (data.expires_in || 3600) - 60,
-  };
+  });
   return data.access_token;
 }

@@ -1,19 +1,12 @@
 import type { PushPayload, PushResult } from './types.js'
+import { buildExpoPushPayload } from './payload.js'
 
 export async function sendExpoPush(
   token: string,
   payload: PushPayload,
 ): Promise<PushResult> {
   try {
-    const body = {
-      to: token,
-      title: payload.title,
-      body: payload.body,
-      data: payload.data || {},
-      priority: payload.android?.priority?.toLowerCase() || 'high',
-      channelId: payload.android?.channelId || 'default',
-      sound: 'default',
-    }
+    const body = buildExpoPushPayload(token, payload)
 
     const res = await fetch('https://exp.host/--/api/v2/push/send', {
       method: 'POST',

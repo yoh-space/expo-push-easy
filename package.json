@@ -1,15 +1,15 @@
 {
   "name": "expo-push-easy",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Send push notifications from any JS runtime — FCM v1, zero painful config",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
+      "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
-      "require": "./dist/index.cjs",
-      "types": "./dist/index.d.ts"
+      "require": "./dist/index.cjs"
     }
   },
   "files": ["dist", "README.md"],

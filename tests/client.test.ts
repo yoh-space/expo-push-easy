@@ -42,14 +42,14 @@ beforeEach(() => {
 
 describe('Client - Permissions', () => {
   it('wraps getPermissionsAsync', async () => {
-    vi.mocked(Notifications.getPermissionsAsync).mockResolvedValue({ status: 'granted' } as any)
+    vi.mocked(Notifications.getPermissionsAsync).mockResolvedValue({ granted: true, canAskAgain: false } as any)
     const status = await getPushPermissionStatus()
     expect(status).toBe('granted')
     expect(Notifications.getPermissionsAsync).toHaveBeenCalled()
   })
 
   it('wraps requestPermissionsAsync', async () => {
-    vi.mocked(Notifications.requestPermissionsAsync).mockResolvedValue({ status: 'denied' } as any)
+    vi.mocked(Notifications.requestPermissionsAsync).mockResolvedValue({ granted: false, canAskAgain: false } as any)
     const status = await requestPushPermissions()
     expect(status).toBe('denied')
     expect(Notifications.requestPermissionsAsync).toHaveBeenCalled()
@@ -58,7 +58,7 @@ describe('Client - Permissions', () => {
 
 describe('Client - Registration', () => {
   it('registers for Expo push token successfully', async () => {
-    vi.mocked(Notifications.requestPermissionsAsync).mockResolvedValue({ status: 'granted' } as any)
+    vi.mocked(Notifications.requestPermissionsAsync).mockResolvedValue({ granted: true, canAskAgain: false } as any)
     vi.mocked(Notifications.getExpoPushTokenAsync).mockResolvedValue({ data: 'ExponentPushToken[mock]' } as any)
 
     const result = await registerForPushNotifications({ projectId: 'test-project' })
@@ -72,7 +72,7 @@ describe('Client - Registration', () => {
   })
 
   it('registers for native Device token successfully', async () => {
-    vi.mocked(Notifications.requestPermissionsAsync).mockResolvedValue({ status: 'granted' } as any)
+    vi.mocked(Notifications.requestPermissionsAsync).mockResolvedValue({ granted: true, canAskAgain: false } as any)
     vi.mocked(Notifications.getDevicePushTokenAsync).mockResolvedValue({ data: 'raw-apns-token' } as any)
 
     const result = await registerForPushNotifications({ useDevicePushToken: true })

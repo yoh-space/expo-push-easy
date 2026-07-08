@@ -15,20 +15,28 @@ function pemToBuf(pem: string): ArrayBuffer {
   return buf.buffer;
 }
 
-const tokenCache = new Map<string, { token: string; expiresAt: number }>();
+const tokenCache = new Map<string, { token: string; expiresAt: number }>()
+
+export function clearFcmTokenCache(): void {
+  tokenCache.clear()
+}
+
+export function getFcmTokenCacheSize(): number {
+  return tokenCache.size
+}
 
 export async function getFcmAccessToken(sa: ServiceAccount): Promise<string> {
-  const cacheKey = sa.client_email;
-  const cached = tokenCache.get(cacheKey);
+  const cacheKey = sa.client_email
+  const cached = tokenCache.get(cacheKey)
   if (cached && Date.now() < cached.expiresAt) {
-    return cached.token;
+    return cached.token
   }
 
-  const now = Math.floor(Date.now() / 1000);
+  const now = Math.floor(Date.now() / 1000)
   const header = base64Url(
     new TextEncoder().encode(JSON.stringify({ alg: "RS256", typ: "JWT" }))
       .buffer as ArrayBuffer,
-  );
+  )
   const payload = base64Url(
     new TextEncoder().encode(
       JSON.stringify({
@@ -39,7 +47,7 @@ export async function getFcmAccessToken(sa: ServiceAccount): Promise<string> {
         iat: now,
       }),
     ).buffer as ArrayBuffer,
-  );
+  )
 
   const key = await crypto.subtle.importKey(
     "pkcs8",
@@ -47,14 +55,14 @@ export async function getFcmAccessToken(sa: ServiceAccount): Promise<string> {
     { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
     false,
     ["sign"],
-  );
+  )
   const signature = base64Url(
     await crypto.subtle.sign(
       { name: "RSASSA-PKCS1-v1_5" },
       key,
       new TextEncoder().encode(`${header}.${payload}`),
     ),
-  );
+  )
 
   const res = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
@@ -63,14 +71,14 @@ export async function getFcmAccessToken(sa: ServiceAccount): Promise<string> {
       grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
       assertion: `${header}.${payload}.${signature}`,
     }),
-  });
-  const data = await res.json();
+  })
+  const data = await res.json()
   if (!data.access_token)
-    throw new Error(`OAuth failed: ${JSON.stringify(data)}`);
+    throw new Error(`OAuth failed: ${JSON.stringify(data)}`)
 
   tokenCache.set(cacheKey, {
     token: data.access_token,
-    expiresAt: now + (data.expires_in || 3600) - 60,
-  });
+    expiresAt: (now + (data.expires_in || 3600) - 60) * 1000,
+  })
   return data.access_token;
 }

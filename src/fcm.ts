@@ -30,10 +30,30 @@ export async function sendFcm(
         provider: 'fcm',
         fcmMessageId: JSON.parse(text).name,
         status: res.status,
+        token,
       }
     }
-    return { success: false, provider: 'fcm', error: text, status: res.status }
+
+    let parsedError: any
+    try {
+      parsedError = JSON.parse(text)
+    } catch {
+      // ignore
+    }
+
+    const errorCode = parsedError?.error?.status || undefined
+    const errorMessage = parsedError?.error?.message || text
+
+    return {
+      success: false,
+      provider: 'fcm',
+      error: errorMessage,
+      errorCode,
+      status: res.status,
+      token,
+    }
   } catch (e) {
-    return { success: false, provider: 'fcm', error: String(e) }
+    return { success: false, provider: 'fcm', error: String(e), token }
   }
 }
+

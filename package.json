@@ -1,6 +1,6 @@
 {
   "name": "expo-push-easy",
-  "version": "1.0.3",
+  "version": "1.1.0",
   "description": "Send push notifications from any JS runtime — FCM v1, zero painful config",
   "repository": "yoh-space/expo-push-easy",
   "homepage": "https://github.com/yoh-space/expo-push-easy#readme",
@@ -13,6 +13,21 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
+    },
+    "./client": {
+      "types": "./dist/client.d.ts",
+      "import": "./dist/client.js",
+      "require": "./dist/client.cjs"
+    },
+    "./adapters": {
+      "types": "./dist/adapters.d.ts",
+      "import": "./dist/adapters.js",
+      "require": "./dist/adapters.cjs"
+    },
+    "./scheduling": {
+      "types": "./dist/scheduling.d.ts",
+      "import": "./dist/scheduling.js",
+      "require": "./dist/scheduling.cjs"
     }
   },
   "files": [
@@ -38,11 +53,21 @@
   "type": "module",
   "tsup": {
     "entry": {
-      "index": "src/index.ts"
+      "index": "src/index.ts",
+      "client": "src/client/index.ts",
+      "adapters": "src/adapters/index.ts",
+      "scheduling": "src/scheduling/index.ts"
     },
     "format": [
       "esm",
       "cjs"
+    ],
+    "external": [
+      "expo-notifications",
+      "expo-device",
+      "expo-constants",
+      "react",
+      "react-native"
     ],
     "dts": true,
     "clean": true
@@ -50,9 +75,29 @@
   "packageManager": "pnpm@10.28.2",
   "devDependencies": {
     "@types/node": "^26.1.1",
+    "@types/react-native": "^0.73.0",
+    "expo-constants": "^57.0.3",
+    "expo-device": "^57.0.0",
+    "expo-notifications": "^57.0.3",
+    "react-native": "^0.86.0",
     "tsup": "^8.5.1",
     "typescript": "^6.0.3",
     "vitest": "^4.1.10"
   },
-  "dependencies": {}
+  "peerDependencies": {
+    "expo-constants": ">=55.0.0",
+    "expo-device": ">=55.0.0",
+    "expo-notifications": ">=55.0.0"
+  },
+  "peerDependenciesMeta": {
+    "expo-notifications": {
+      "optional": true
+    },
+    "expo-device": {
+      "optional": true
+    },
+    "expo-constants": {
+      "optional": true
+    }
+  }
 }

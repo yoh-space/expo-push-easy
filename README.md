@@ -1,5 +1,6 @@
 # expo-push-easy
 
+[![CI](https://github.com/yoh-space/expo-push-easy/actions/workflows/ci.yml/badge.svg)](https://github.com/yoh-space/expo-push-easy/actions/workflows/ci.yml)
 [![npm version](https://img.shields.io/npm/v/expo-push-easy.svg?style=flat-flat)](https://www.npmjs.com/package/expo-push-easy)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![TypeScript](https://img.shields.io/badge/%3C%2F%3E-TypeScript-%23007acc.svg)](https://www.typescriptlang.org/)
@@ -27,6 +28,20 @@ Push notifications are simple in concept but painful in practice:
 - **Schema Key Translating**: FCM v1 uses nested, `snake_case` properties (such as `channel_id` or `click_action`), whereas Expo uses `camelCase` (such as `channelId` or `categoryId`).
 
 **expo-push-easy** wraps all of that complexity into a single, unified, **zero-dependency** helper utilizing the native Web Crypto API (`crypto.subtle`) and standard `fetch()`.
+
+### How this compares to the alternatives
+
+| | `expo-push-easy` | `expo-server-sdk` | `firebase-admin` |
+|---|---|---|---|
+| Works in Convex / Cloudflare Workers / Next.js Edge | ✅ | ❌ (Node-only, no edge support) | ❌ (depends on Node `crypto`, `net`, `tls`) |
+| Sends to Expo Push tokens | ✅ | ✅ | ❌ |
+| Sends to raw FCM v1 tokens | ✅ | ❌ | ✅ |
+| Single unified API for both token types | ✅ | ❌ | ❌ |
+| Dependency footprint | Zero runtime deps | Several (Node-only) | Large (`googleapis`, gRPC, etc.) |
+| JWT signing method | Web Crypto (`crypto.subtle`) | N/A | Node `crypto` / `googleapis` |
+| Built-in Convex/Supabase/Firestore token storage | ✅ | ❌ | ❌ |
+
+The short version: if your backend runs on Node.js and you only ever send to Expo tokens, `expo-server-sdk` is fine. But the moment your backend runs in an isolate/edge runtime (Convex functions, Cloudflare Workers, Next.js Edge middleware/routes) — which is increasingly common — `jsonwebtoken` and `googleapis`-based libraries throw at runtime because they expect Node's native `crypto`, `net`, and `tls` modules that don't exist in V8 isolates. `expo-push-easy` exists specifically to be usable in both worlds without a rewrite.
 
 ---
 
@@ -497,6 +512,27 @@ if (!result.success) {
   }
 }
 ```
+
+### Common Failure Modes & Error Codes
+
+`result.error` and `result.errorCode` surface the raw response from whichever gateway handled the token. The values differ by provider — handle both:
+
+| Provider | `errorCode` | Meaning | Recommended action |
+|---|---|---|---|
+| FCM v1 | `UNREGISTERED` | Token is expired, uninstalled, or otherwise invalid. | Delete the token from your store immediately. |
+| FCM v1 | `INVALID_ARGUMENT` | Malformed request (bad token format, invalid payload field). | Log and inspect payload; do not retry as-is. |
+| FCM v1 | `SENDER_ID_MISMATCH` | Token belongs to a different Firebase project than your service account. | Delete the token; it can never succeed for this project. |
+| FCM v1 | `QUOTA_EXCEEDED` | You've hit FCM's rate limit for this project/token. | Retry with exponential backoff; consider batching sends. |
+| FCM v1 | `UNAVAILABLE` | Transient FCM server issue. | Retry with backoff; not caused by your request. |
+| FCM v1 | `INTERNAL` | Unexpected FCM server error. | Retry with backoff. |
+| Expo Push | `DeviceNotRegistered` | Token is no longer valid (app uninstalled, etc). | Delete the token from your store immediately. |
+| Expo Push | `MessageTooBig` | Payload exceeds Expo's size limit (4KB). | Trim payload data before resending. |
+| Expo Push | `MessageRateExceeded` | Too many messages sent to this device too quickly. | Retry with backoff; throttle sends to that token. |
+| Expo Push | `InvalidCredentials` | Your Expo push credentials are misconfigured. | Check your Expo access token / project setup, not the target token. |
+
+**Rate limits**: neither FCM nor Expo Push guarantee unlimited throughput. If you're sending to more than a handful of tokens, use `sendBatch()` rather than firing many `send()` calls in a tight loop, and add your own delay/backoff between batches if you see `QUOTA_EXCEEDED` or `MessageRateExceeded` in results. This library does not currently retry automatically — retries are left to the caller so you can apply backoff logic appropriate to your own traffic patterns.
+
+**Network/transport failures** (timeouts, DNS errors, offline device at send time): these surface as `success: false` with a stringified error in `result.error` and no `errorCode`, since the request never reached the gateway. Treat missing `errorCode` as "unknown/transient" — safe to retry, not safe to assume the token is dead.
 
 ---
 

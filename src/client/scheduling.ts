@@ -6,17 +6,20 @@ function mapTrigger(trigger: LocalNotificationTrigger): any {
   switch (trigger.type) {
     case 'timeInterval':
       return {
+        type: 'timeInterval',
         seconds: trigger.seconds,
         repeats: trigger.repeats ?? false,
       };
     case 'daily':
       return {
+        type: 'daily',
         hour: trigger.hour,
         minute: trigger.minute,
         repeats: true,
       };
     case 'weekly':
       return {
+        type: 'weekly',
         weekday: trigger.weekday,
         hour: trigger.hour,
         minute: trigger.minute,
@@ -24,6 +27,7 @@ function mapTrigger(trigger: LocalNotificationTrigger): any {
       };
     case 'calendar':
       return {
+        type: 'calendar',
         year: trigger.year,
         month: trigger.month,
         day: trigger.day,

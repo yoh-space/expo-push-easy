@@ -1,6 +1,6 @@
 {
   "name": "expo-push-easy",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Send push notifications from any JS runtime — FCM v1, zero painful config",
   "repository": "yoh-space/expo-push-easy",
   "homepage": "https://github.com/yoh-space/expo-push-easy#readme",

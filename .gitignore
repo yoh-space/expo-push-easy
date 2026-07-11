@@ -6,3 +6,5 @@ dist
 service-account.json
 firebase-service-account.json
 *.tsbuildinfo
+.env.convex.tmp
+.vscode/

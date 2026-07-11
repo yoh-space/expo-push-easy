@@ -5,6 +5,10 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![TypeScript](https://img.shields.io/badge/%3C%2F%3E-TypeScript-%23007acc.svg)](https://www.typescriptlang.org/)
 
+<p align="center">
+  <img src="assets/hero.png" alt="App UI showing push notification flow — title, body, and deep link" style="max-width:100%;height:auto;object-fit:contain;" />
+</p>
+
 **The ultimate zero-dependency React Native & Expo push notification gateway for modern JavaScript runtimes.** Send notifications to Expo Push and raw Firebase Cloud Messaging (FCM v1) tokens with a single unified API. Works seamlessly in Node.js, Convex, Cloudflare Workers, Next.js Edge, Bun, and Deno.
 
 ```ts
@@ -42,6 +46,29 @@ Push notifications are simple in concept but painful in practice:
 | Built-in Convex/Supabase/Firestore token storage | ✅ | ❌ | ❌ |
 
 The short version: if your backend runs on Node.js and you only ever send to Expo tokens, `expo-server-sdk` is fine. But the moment your backend runs in an isolate/edge runtime (Convex functions, Cloudflare Workers, Next.js Edge middleware/routes) — which is increasingly common — `jsonwebtoken` and `googleapis`-based libraries throw at runtime because they expect Node's native `crypto`, `net`, and `tls` modules that don't exist in V8 isolates. `expo-push-easy` exists specifically to be usable in both worlds without a rewrite.
+
+---
+
+## 🎯 Quick Start Examples
+
+Want to see it in action? Check out our complete examples:
+
+### [Convex Example](./examples/convex-example)
+A full-featured React Native app with Convex backend demonstrating:
+- ✅ FCM v1 token registration
+- ✅ Server-side notification sending
+- ✅ Token storage and management
+- ✅ Complete error handling
+- ✅ Android notification channels
+
+```bash
+cd examples/convex-example
+pnpm install
+npx convex dev
+npx expo start
+```
+
+[View Example →](./examples/convex-example)
 
 ---
 
@@ -533,6 +560,14 @@ if (!result.success) {
 **Rate limits**: neither FCM nor Expo Push guarantee unlimited throughput. If you're sending to more than a handful of tokens, use `sendBatch()` rather than firing many `send()` calls in a tight loop, and add your own delay/backoff between batches if you see `QUOTA_EXCEEDED` or `MessageRateExceeded` in results. This library does not currently retry automatically — retries are left to the caller so you can apply backoff logic appropriate to your own traffic patterns.
 
 **Network/transport failures** (timeouts, DNS errors, offline device at send time): these surface as `success: false` with a stringified error in `result.error` and no `errorCode`, since the request never reached the gateway. Treat missing `errorCode` as "unknown/transient" — safe to retry, not safe to assume the token is dead.
+
+---
+
+## Documentation
+
+- [**Setup Guide**](./docs/SETUP_GUIDE.md) — Step-by-step Firebase + client + server setup
+- [**Troubleshooting Guide**](./docs/TROUBLESHOOTING.md) — Common issues and solutions
+- [**Convex Example App**](./examples/convex-example) — Full demo with server-side scheduling, batch send, and notification history
 
 ---
 

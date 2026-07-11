@@ -117,7 +117,7 @@ describe('Client - Scheduling', () => {
     expect(id).toBe('notif-id-123')
     expect(Notifications.scheduleNotificationAsync).toHaveBeenCalledWith({
       content: { title: 'Local', body: 'Body' },
-      trigger: { type: 'timeInterval', seconds: 10, repeats: true },
+      trigger: { seconds: 10, repeats: true },
     })
   })
 
